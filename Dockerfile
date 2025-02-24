@@ -66,6 +66,7 @@ RUN apt-get update && apt-get install -y \
         php${PHP_VERSION}-ps \
         php${PHP_VERSION}-pspell \
         php${PHP_VERSION}-readline \
+        php${PHP_VERSION}-redis \
         php${PHP_VERSION}-shmop \
         php${PHP_VERSION}-simplexml \
         php${PHP_VERSION}-soap \
