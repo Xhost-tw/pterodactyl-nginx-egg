@@ -1,30 +1,168 @@
-# Pterodactyl Nginx egg
+# Pterodactyl Nginx Egg
 
-Pterodactyl Nginx web server egg with PHP8.x, Wordpress, Git & Cloudflare Tunnel support 
-<br><br>
+A versatile Pterodactyl Egg featuring Nginx, PHP 8.x, WordPress, Git, Composer, Cronjob, ionCube Loader, Auto-Update, and Cloudflare Tunnel support.
+
+<br>
+
+## Table of Contents
+- [Features](#features)
+- [Installation](#installation)
+- [Auto-Update System](#auto-update-system)
+- [Composer Modules Usage](#composer-modules-usage)
+- [ionCube Loader Support](#ioncube-loader-support)
+- [Cloudflared Tunnel Tutorial 🚀](#-cloudflared-tunnel-tutorial)
+- [Git Module](#git-module)
+- [Cronjob](#cronjob)
+- [Change PHP version](#change-php-version)
+- [PHP extensions](#php-extensions)
+- [Notes](#notes)
+- [License](#license)
+
+<br>
+
 ## Features
 
-#### 🔹 Supports AMD64 & ARM64
-#### 🔹 Cloudflare Tunnel support
-#### 🔹 Git support for your webserver
-#### 🔹 You can select the desired PHP version:
-- ✅ 8.4
-- ✅ 8.3
-- ✅ 8.2 [Only critical security updates]
-- ✅ 8.1 [Only critical security updates]
-- ☑️ 8.0 [EOL]
+- 🔄 **Auto-Update**: Automatically checks for and applies updates via Tavuru API
+- 🧹 LogCleaner: Cleans `/tmp` and old logs (dry-run supported)  
+- 🌱 Git Module: Auto `git pull` on restart  
+- 📦 Composer Module: Installs packages from `composer.json` or a fallback variable  
+- 🔐 ionCube Loader: Auto-detected and enabled for encrypted PHP  
+- 🌐 Cloudflare Tunnel: Secure tunnel with token validation  
+- 🚀 PHP-NGINX Startup: Auto-detects PHP-FPM version, runs NGINX in foreground  
+- 🖥️ Multi-arch support: AMD64 & ARM64  
+- 🎯 **Selectable PHP Versions:**  
+  - ✅ 8.4  
+  - ✅ 8.3  
+  - ☑️ 8.2 (security-only)  
+  - ☑️ 8.1 (security-only)  
 
-[PHP supported versions](https://www.php.net/supported-versions.php)
-<br><br>
-## How to install
+[PHP Supported Versions](https://www.php.net/supported-versions.php)
 
-- **Step 1:** Download the egg (json file `egg-nginx.json`)
-- **Step 2:** In your panel, go to the "Nests" category in the sidebar
-- **Step 3:** Import the egg under "Import egg"
-- **Step 4:** Create a new server and select the "Nginx" egg
-- **Step 5:** Select the corresponding Docker image with the desired PHP version
-- **Step 6:** Fill in the text fields. Whether Wordpress is desired or not. It is important to **enter the selected PHP version in the PHP version field**.
-<br><br>
+<br>
+
+## Installation
+
+1. Download the egg file (`egg-nginx-v2.json`)  
+2. In your Pterodactyl panel, navigate to **Nests** in the sidebar  
+3. Import the egg under **Import Egg**  
+4. Create a new server and select the **Nginx** egg  
+5. Choose the Docker image matching your desired PHP version  
+6. Fill in all required variables, including whether WordPress is desired and the PHP version field (must be set explicitly)  
+
+<br>
+
+## Auto-Update System
+
+The egg includes an intelligent auto-update system that keeps your installation current with the latest features and security updates.
+
+### How it works:
+
+- **Automatic Version Checking**: Uses the Tavuru API to check for new releases
+- **Smart Differential Updates**: Downloads only changed files, not the entire codebase
+- **Selective Updates**: Only updates core system files (modules, nginx, php configs)
+- **User Data Protection**: Never touches your `www` directory or user data
+- **Self-Update Capability**: Can safely update its own update mechanism
+
+### Configuration:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AUTOUPDATE_STATUS` | `1` | Enable (`1`) or disable (`0`) auto-update checks |
+| `AUTOUPDATE_FORCE` | `1` | Automatically apply updates (`1`) or just check (`0`) |
+
+### Update Behavior:
+
+#### **Conservative Mode (Default)**
+- `AUTOUPDATE_STATUS=1`, `AUTOUPDATE_FORCE=0`
+- Checks for updates and shows availability
+- Shows version information and changelog
+- Updates must be manually approved
+
+#### **Automatic Mode**
+- `AUTOUPDATE_STATUS=1`, `AUTOUPDATE_FORCE=1`
+- Automatically downloads and applies updates
+- Shows detailed progress during updates
+- Creates backups before applying changes
+
+#### **Disabled Mode**
+- `AUTOUPDATE_STATUS=0`
+- Skips all update operations
+- Useful for production environments requiring manual updates
+
+### Example Output:
+
+```bash
+[AutoUpdate] Current version: v2.1.0
+[AutoUpdate] Latest version: v2.2.0
+[AutoUpdate] ⚠ Update available: v2.1.0 → v2.2.0
+[AutoUpdate] Update summary:
+  • Total changes: 15
+  • Files added: 3
+  • Files modified: 8
+  • Files removed: 2
+[AutoUpdate] ✓ Update completed successfully
+```
+
+### What Gets Updated:
+
+- ✅ **Module scripts** (modules/)
+- ✅ **Nginx configurations** (nginx/)
+- ✅ **PHP configurations** (php/)
+- ✅ **Core scripts** (start-modules.sh)
+- ✅ **Documentation** (README.md, LICENSE)
+- ❌ **User content** (www/ directory)
+- ❌ **User data** (logs, uploads, databases)
+
+<br>
+
+## Composer Modules Usage
+
+This egg supports easy installation of PHP libraries using Composer.
+
+### How it works:
+
+- If a `composer.json` file exists in your server's root directory, it will be used automatically to install dependencies.  
+- If `composer.json` is missing, the egg looks for a variable (e.g. `COMPOSER_MODULES`) with a space-separated list of Composer packages to install.  
+- If neither `composer.json` nor `COMPOSER_MODULES` is set, Composer installation is skipped.
+
+### Specifying Composer Modules manually:
+
+- Enter the packages in the `COMPOSER_MODULES` variable in this format:
+
+```bash
+vendor/package[:version_constraint]
+```
+
+Examples:  
+- Latest stable version:  
+  ``` 
+  symfony/http-foundation 
+  ```  
+- Specific version or range:  
+  ``` 
+  monolog/monolog:^2.0 doctrine/orm:~2.10 nesbot/carbon:^2.50 
+  ```  
+- Multiple packages separated by spaces:  
+  ``` 
+  symfony/http-foundation:^6.0 monolog/monolog guzzlehttp/guzzle 
+  ```
+
+### Notes:
+
+- Make sure package names and versions exist on [Packagist](https://packagist.org/).  
+- Incorrect inputs can cause installation errors visible in the server console.  
+- Installing many or complex packages can increase startup time.  
+- Composer must be pre-installed in the container environment (this egg includes it).  
+
+<br>
+
+## ionCube Loader Support
+
+- ionCube Loader is detected and enabled automatically if encrypted PHP files are present.  
+- No manual configuration needed; simply upload your ionCube-protected scripts and run.  
+
+<br>
+
 ## 🚀 Cloudflared Tunnel Tutorial  
 
 With **Cloudflared**, you can create a secure tunnel to your server, making it accessible over the internet **without** complicated port forwarding!  
@@ -44,13 +182,11 @@ With **Cloudflared**, you can create a secure tunnel to your server, making it a
   
 ![grafik](https://github.com/user-attachments/assets/0c0430a5-5cb6-45e4-8b26-1805cddde3cc)
 
-
 ---
 
 - 🔹 **Step 7: Activate Cloudflared**
     
 ![grafik](https://github.com/user-attachments/assets/726c5dad-7cb6-4537-a215-6aaec59d827a)
-
 
 ---
 
@@ -66,7 +202,7 @@ With **Cloudflared**, you can create a secure tunnel to your server, making it a
 
 ---
 
-- 🔹 **Step 10: Depending on the type, select http and URL always “localhost” + the web server port**
+- 🔹 **Step 10: Depending on the type, select http and URL always "localhost" + the web server port**
 
 ![grafik](https://github.com/user-attachments/assets/7b1a4e91-50f3-4fcb-a0da-7eed611ae391)
 
@@ -76,114 +212,53 @@ With **Cloudflared**, you can create a secure tunnel to your server, making it a
   
 ![grafik](https://github.com/user-attachments/assets/3d4b63fd-db66-4a7d-85ea-0bec4a7ef948)
 
+<br>
 
-✅ You have successfully set up Cloudflared and connected it to your server!<br><br>
-🔹 Info: Your web server ip and port does not have to be accessible from outside and can have a local IP such as 127.0.0.1.
-<br><br>
-## How to Use Composer Modules
+## Git Module
 
-This Pterodactyl Egg allows you to easily install additional PHP libraries (Composer modules) for your server. Here's how:
+- Specify your Git repository URL in the `GIT_ADDRESS` variable  
+- Enable Git by setting the `GIT_STATUS` variable to `1` or `true`  
+- On server creation, your repo will be cloned into the `www` folder  
+- On each restart, `git pull` runs to update the files  
 
-1.  **Locate the `Composer modules` Variable:** When creating or editing your server in the Pterodactyl panel, you will find a variable named `Composer modules`.
+<br>
 
-2.  **Specify the Modules:** In the value field of the `Composer modules` variable, enter a space-separated list of the Composer packages you wish to install. You can also specify the desired version constraints.
+## Cronjob
 
-    * **Basic Package:** To install the latest stable version of a package, simply enter its name:
-        ```
-        vendor/package
-        ```
-        Example: `symfony/http-foundation`
+This egg includes a **container-native cron engine** for automated task scheduling without requiring system cron.
 
-    * **Specific Version:** To install a specific version or version range, use the following format:
-        ```
-        vendor/package:version_constraint
-        ```
-        Examples:
-        * `monolog/monolog:^2.0` (installs the latest version within the 2.x branch)
-        * `doctrine/orm:~2.10` (installs a version compatible with 2.10)
-        * `nesbot/carbon:^2.50`
+### How it works:
 
-    * **Multiple Modules:** To install multiple modules, separate them with spaces:
-        ```
-        vendor/package1:version vendor/package2 vendor/package3:^1.0
-        ```
-        Example: `symfony/http-foundation ^6.0 monolog/monolog guzzlehttp/guzzle`
+- Enable cron by setting the `CRON_STATUS` variable to `1` or `true`
+- Create or edit `/home/container/crontab` with your scheduled tasks
+- The cron engine runs automatically in the background and executes jobs at the specified times
+- All execution logs are saved to `/home/container/logs/cron.log`
 
-3.  **Save and Start/Restart Your Server:** After entering the desired Composer modules in the `COMPOSER_MODULES` variable, save your server configuration. If your server is already running, you will need to restart it for the changes to take effect.
-
-4.  **Module Installation:** During the server startup process, the Egg will automatically detect the modules listed in the `COMPOSER_MODULES` variable and attempt to install them using Composer. You can monitor the server console for the installation output.
-
-**Important Notes:**
-
-* Ensure that the package names and version constraints you enter are correct and exist on Packagist ([https://packagist.org/](https://packagist.org/)).
-* Incorrectly specified modules or version constraints may lead to installation errors. Check your server console for any error messages.
-* Installing a large number of modules or very complex dependencies can increase the server startup time.
-* This Egg assumes that Composer is already installed within the server environment.
-
-By following these steps, you can easily extend the functionality of your server by adding various PHP libraries through Composer modules.
-
-<br><br>
-## FAQ
-
-
-#### In which folder do I upload my files for my site?
-The "www" folder is used as a public folder. There you can add your PHP, HTML, CSS, JS and so on files that are required for the public or for the operation of the site.
-<br><br>
-## How do I use Git support?
-
-#### Instructions for Git support
-Git support allows you to automatically clone a Git repository into the www folder of your web server and apply the latest changes every time you restart (git pull). This is how it works:
-
-#### Prerequisites:
-- Git Status must be enabled to use Git.
-- GIT_ADDRESS must contain a valid Git repository that you want to clon
-
-#### Steps to set up (Specify GIT_ADDRESS):
-- When creating the web server, you can specify a Git repository URL in the GIT_ADDRESS field.
-- Example: https://github.com/username/repository.git
-
-#### Activate Git status:
-- Make sure that the Git status is set to ‘active’ (1 or true) so that the repository is managed automatically.
-
-#### Automatic installation:
-- When the server is first created, the specified repository is automatically cloned into the www folder of your server.
-
-#### Automatic updates:
-- After each restart of the web server, the repository in the www folder is automatically updated to the latest version (git pull).
-
-## How to use https://
-
-Go to the file:
+### Cron Job Examples:
 
 ```bash
-/home/container/nginx/conf.d/default.conf
+# Run every minute
+* * * * * echo "$(date): Task executed" >> /home/container/logs/task.log
+
+# Daily backup at 2 AM
+0 2 * * * tar -czf /home/container/backups/backup-$(date +%Y%m%d).tar.gz /home/container/www
+
+# Clean old logs weekly (Sundays at midnight)
+0 0 * * 0 find /home/container/logs -name "*.log" -mtime +7 -delete
+
+# Laravel Scheduler (if using Laravel)
+* * * * * cd /home/container/www && /usr/bin/php artisan schedule:run >> /home/container/logs/scheduler.log 2>&1
 ```
 
-Change "listen" to:
+### Notes:
 
-```bash
-listen <YOUR_PORT> ssl;
-```
+- Uses **custom cron engine** - no system cron dependency required
+- Supports **command substitution** like `$(date)` and environment variables
+- **Always use absolute paths** in cron commands
+- The cron engine starts automatically with the container
 
-Please also change the spacer distance. Otherwise the "listen" will be overwritten each time the egg is restarted.
+<br>
 
-Add the following lines:
-
-```bash
-ssl_certificate /home/container/your_cert.crt;
-ssl_certificate_key /home/container/your_cert_key.key;
-ssl_protocols TLSv1.2 TLSv1.3;
-ssl_ciphers HIGH:!aNULL:!MD5;
-```
-
-Adjust the lines accordingly.
-
-Furthermore, if not already done, adjust to your domain:
-
-```bash
-server_name www.example.com;
-```
-<br><br>
 ## Change PHP version
 
 Changing the PHP version is currently still somewhat cumbersome. A revised version will be available in the future.
@@ -198,10 +273,8 @@ Changing the PHP version is currently still somewhat cumbersome. A revised versi
 
 ![docker_image](https://github.com/user-attachments/assets/050b6db9-9cc8-42f7-a300-11450e60cb7d)
 
----
+<br>
 
-- **Step 3:** Restart your container.
-<br><br>
 ## PHP extensions
 
 PHP extensions of PHP version 8.3:
@@ -210,10 +283,20 @@ PHP extensions of PHP version 8.3:
 Core, date, libxml, openssl, pcre, zlib, filter, hash, json, random, Reflection, SPL, session, standard, sodium, cgi-fcgi, mysqlnd, PDO, psr, xml, bcmath, calendar, ctype, curl, dom, mbstring, FFI, fileinfo, ftp, gd, gettext, gmp, iconv, igbinary, imagick, imap, intl, ldap, exif, memcache, mongodb, msgpack, mysqli, odbc, pcov, pdo_mysql, PDO_ODBC, pdo_pgsql, pdo_sqlite, pgsql, Phar, posix, ps, pspell, readline, shmop, SimpleXML, soap, sockets, sqlite3, sysvmsg, sysvsem, sysvshm, tokenizer, xmlreader, xmlwriter, xsl, zip, mailparse, memcached, inotify, maxminddb, protobuf, Zend OPcache
 ```
 
-Small differences in the extensions between the PHP versions.
-<br><br>
+<br>
+
+## Notes
+
+- Public web root directory: `www`  
+- To enable HTTPS, modify `/home/container/nginx/conf.d/default.conf` accordingly  
+- PHP extensions vary slightly per version; full list available in docs  
+- Changing PHP versions requires matching Docker image selection and restart  
+- Auto-updates are powered by the [Tavuru API](https://api.tavuru.de) for reliable version management
+
+<br>
+
 ## License
 
 [MIT License](https://choosealicense.com/licenses/mit/)
 
-Originally forked and edited from https://gitlab.com/tenten8401/pterodactyl-nginx
+Forked and adapted from: https://gitlab.com/tenten8401/pterodactyl-nginx
