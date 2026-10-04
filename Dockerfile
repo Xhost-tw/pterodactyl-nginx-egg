@@ -85,8 +85,8 @@ RUN apt-get update && apt-get install -y \
         php${PHP_VERSION}-inotify \
         php${PHP_VERSION}-maxminddb \
         php${PHP_VERSION}-protobuf \
-        php${PHP_VERSION}-opcache \
         php${PHP_VERSION}-dev \
+    && if apt-cache show "php${PHP_VERSION}-opcache" > /dev/null 2>&1; then apt-get install -y --no-install-recommends "php${PHP_VERSION}-opcache"; fi \
     && wget -q -O /tmp/composer.phar https://getcomposer.org/download/latest-stable/composer.phar \
     && SHA256=$(wget -q -O - https://getcomposer.org/download/latest-stable/composer.phar.sha256) \
     && echo "$SHA256 /tmp/composer.phar" | sha256sum -c - \
